@@ -30,6 +30,13 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+The integration stores no secret: the Carbon Intensity API needs no key. It
+keeps one small file under `/data` (`carbon-intensity-state.json`: the last
+index seen per zone and the end of the last best window announced). It only
+calls `https://api.carbonintensity.org.uk` over HTTPS, sending the outward part
+of the postcodes configured (`RG10`, never the full postcode), and opens no
+port.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and the Carbon Intensity API of NESO.

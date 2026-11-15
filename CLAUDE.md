@@ -31,16 +31,21 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
-src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+index.js                          SDK wiring only: src/app.js registers the handlers before connect()
+src/app.js                        every SDK handler, the minute timer, reads, states, triggers, status
+src/api.js                        Carbon Intensity API client: national, region, postcode (48-h forecast)
+src/forecast.js                   slot in progress, next 24 hours, best window
+src/devices.js                    one device per zone: features and states (names in src/i18n.js)
+src/widgets.js                    dashboard widget `forecast`
+src/i18n.js                       every text and feature name, in en, fr, de, es
+src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults), postcodes, zones
+src/store.js                      /data/carbon-intensity-state.json (last index, best window announced)
+src/http.js                       fetch with timeout, errors with the status only
+src/issues.js                     a lasting failure logged once, its recovery once
+gladys-assistant-integration.json manifest: name, config_schema, actions, triggers, widget...
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (en and fr mandatory)
+test/                             node --test, against the SDK's fake Gladys and a fake API serving
+                                  real answers (test/helpers/world.js, test/fixtures)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +75,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in four languages (English, French, German,
+  Spanish): action messages, manifest texts, feature names, widget texts, and
+  `docs/{en,fr,de,es}.md`, kept in sync. `test/i18n.test.js` enforces it.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -214,6 +220,35 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
 - Les filtres de scène ne font qu'égalité et appartenance : un seuil reste le travail d'un capteur.
 - **Les clés de widgets, de déclencheurs et d'actions sont figées une fois publiées.**
 - `gladys_version` `>=5.1.0` dès qu'il y a widgets, déclencheurs ou actions de scène.
+
+## Carbon Intensity UK (propre à ce dépôt)
+
+- **API** `https://api.carbonintensity.org.uk` (NESO, CC BY 4.0, sans clé ni quota annoncé). Routes utilisées :
+  `/intensity/{from}/fw48h` + `/generation` (national), `/regional/intensity/{from}/fw48h/regionid/{1-17}` et
+  `.../postcode/{outward}`. `{from}` au format `2026-11-15T16:20Z` : la réponse commence par **la demi-heure qui
+  contient `from`** et compte 96 créneaux. Vérifié contre l'API réelle le 15/11/2026.
+- **Code postal inconnu** : la route `fw48h` répond **HTTP 200 avec le corps `null`** (les routes sans date
+  répondent 400). Région hors 1-17 : 400 (la 18, « GB », répond pourtant 200 : on s'en tient à 1-17).
+- **Pas de valeur mesurée** pour les régions ni pour la demi-heure en cours (`actual` vaut `null` dans `fw48h`) :
+  l'intensité publiée est la prévision. Le mix national ne vient que de `/generation` (créneau précédent), celui
+  des régions est dans chaque créneau.
+- **Cadence** : `should_poll: false`, minuteur maison d'une minute, une lecture par zone et par créneau (ou
+  30 min après la précédente), seulement pour les zones dont l'appareil est ajouté ou le widget affiché depuis
+  moins d'une heure ; échec relu après 5 min, code postal inconnu après 6 h. Pendant une panne, la prévision
+  48 h gardée en mémoire continue de donner le créneau en cours.
+- **Couples** : intensité en `grid-carbon-sensor/carbon-intensity` ; indice 1-5 en `counter-sensor/integer`
+  (le badge `risk` n'a que 0-3) doublé d'un `text/text` ; parts en `grid-carbon-sensor/*-percentage` et
+  `counter-sensor/integer` + `%` ; début du meilleur créneau en `text/text` (« 03:00 », fuseau de Gladys), délai
+  en `duration/integer` + `minutes`.
+- **Meilleur créneau** : fenêtre de D/30 créneaux consécutifs de moyenne minimale, qui **finit** dans les 24 h
+  à compter du créneau en cours ; égalité → la plus tôt ; moyenne arrondie au dixième (sinon la dérive des
+  flottants préfère une fenêtre plus tardive). Déclencheur `best_window_started` quand la fenêtre commence au
+  créneau en cours, une fois par fenêtre (`announcedUntil` dans `/data`). Une zone à 0 g/kWh (le sud de
+  l'Écosse l'est souvent) le relance à la fin de chaque fenêtre : documenté.
+- **Déclencheur `carbon_index_low`** : passage d'un indice ≥ 3 à ≤ 2, dernier indice gardé dans `/data` ; rien
+  au premier relevé (indice précédent inconnu). Un envoi refusé n'est pas mémorisé (renvoyé au tick suivant).
+- **Annotations et `now_marker`** du graphique : livrés dans Gladys 5.2.0 ; `countries` impose de toute façon
+  `>=5.3.0`.
 
 ## Store
 

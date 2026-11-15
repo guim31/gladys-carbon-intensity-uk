@@ -1,67 +1,151 @@
-# Template de démonstration
+# Carbon Intensity UK
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+La propreté de l'électricité britannique, maintenant et sur les 24 prochaines
+heures, d'après l'[API Carbon Intensity](https://carbonintensity.org.uk)
+officielle de NESO (National Energy System Operator, ex-National Grid ESO). Pour
+la Grande-Bretagne entière, une région ou votre code postal. Cette intégration
+est sans lien avec NESO.
 
-## Ce que vous obtenez
+## Présentation
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+Pour chaque zone suivie (Grande-Bretagne, région, code postal), l'intégration
+ajoute un appareil avec :
+
+- l'**intensité carbone** de l'électricité de la demi-heure en cours, en
+  gCO₂/kWh, et l'**indice** de NESO (très faible → très élevé) ;
+- le **mix électrique** : part de l'éolien, du solaire, du nucléaire, du gaz,
+  des importations, de la biomasse, de l'hydraulique, du charbon et des autres
+  sources, plus les parts bas carbone et renouvelable ;
+- le **meilleur créneau** des 24 prochaines heures : quand commence la période
+  la plus propre de la durée choisie (3 heures par défaut), dans combien de
+  minutes, et son intensité moyenne.
+
+En plus : un widget de tableau de bord avec la courbe prévue sur 24 h, deux
+déclencheurs de scène (« Indice carbone devenu faible », « Début du meilleur
+créneau ») et une action de scène qui trouve le meilleur créneau de n'importe
+quelle durée, pour lancer le lave-vaisselle ou recharger la voiture quand le
+réseau est le plus propre.
+
+## Prérequis
+
+- Gladys Assistant 5.3.0 ou plus récent.
+- Gladys doit joindre `api.carbonintensity.org.uk` sur Internet. Ni compte ni
+  clé : les données sont ouvertes, sous licence CC BY 4.0.
+- Les zones sont en Grande-Bretagne (Angleterre, Écosse, pays de Galles) :
+  l'Irlande du Nord n'est pas couverte par l'API.
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+1. Installez l'intégration (**Intégrations → Installer depuis GitHub**, puis
+   l'adresse du dépôt).
+2. Dans son onglet **Configuration** :
+   - **Langue des noms** : langue des noms d'appareils et de fonctionnalités
+     (figés à l'ajout d'un appareil) et des textes envoyés aux scènes ;
+   - **Grande-Bretagne entière** : un appareil pour les chiffres nationaux
+     (activé par défaut) ;
+   - **Régions** : l'une des 14 régions des réseaux de distribution, plus
+     l'Angleterre, l'Écosse et le pays de Galles ;
+   - **Codes postaux** : jusqu'à cinq codes postaux britanniques, séparés par
+     des virgules. Seule la première partie compte (`RG10` pour `RG10 9AB`) :
+     l'API en déduit la région. Votre code postal complet n'est jamais envoyé ;
+   - **Durée du meilleur créneau** : de 30 minutes à 6 heures.
+3. Enregistrez, puis ajoutez les appareils depuis l'onglet **Découverte**.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+### Bouton « Tester la connexion »
 
-## Actions
+Lit toutes les zones d'un coup et affiche leur intensité actuelle, ou ce qui
+ne va pas (pas de réponse, code postal inconnu de l'API, texte qui n'est pas
+un code postal).
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+## Appareils
+
+### Intensité carbone (un par zone)
+
+| Fonctionnalité                        | Valeur                                                   |
+| ------------------------------------- | -------------------------------------------------------- |
+| Intensité carbone                     | gCO₂/kWh de la demi-heure en cours                       |
+| Indice carbone (1 à 5)                | 1 très faible, 2 faible, 3 modéré, 4 élevé, 5 très élevé |
+| Indice carbone                        | le même indice, en toutes lettres                        |
+| Part bas carbone, part renouvelable   | %                                                        |
+| Part de l'éolien, du solaire, du gaz… | % de chaque source, arrondi                              |
+| Début du meilleur créneau             | heure, par exemple `03:00`                               |
+| Meilleur créneau dans                 | minutes, arrondi à 5 au-dessus, 0 une fois commencé      |
+| Intensité du meilleur créneau         | sa moyenne en gCO₂/kWh                                   |
+
+L'intensité est la **prévision** de NESO pour la demi-heure en cours : l'API n'a
+pas de valeur mesurée pour les régions, ni pour la demi-heure en cours. « Bas
+carbone » compte l'éolien, le solaire, l'hydraulique, la biomasse et le
+nucléaire ; les importations et les « autres » ne comptent ni d'un côté ni de
+l'autre.
+
+## Widget
+
+**Prévision carbone** affiche, pour la zone choisie dans ses réglages (la
+première par défaut) : l'intensité actuelle et l'indice, le début du meilleur
+créneau, la courbe prévue sur 24 h avec le meilleur créneau et l'heure
+actuelle marqués, et le mix électrique de la demi-heure en barres. Deux
+réglages masquent le meilleur créneau et le mix.
 
 ## Scènes
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+### Indice carbone devenu faible (déclencheur)
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+Se déclenche quand l'indice d'une zone passe de modéré (ou pire) à faible ou
+très faible. Filtres : la zone, l'indice atteint. Variables : `level`
+(`very_low`, `low`), `index` (1, 2), `index_label`, `intensity`, `zone`.
 
-## Tableau de bord
+### Début du meilleur créneau (déclencheur)
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+Se déclenche quand la demi-heure en cours ouvre le créneau le plus propre des
+24 prochaines heures, pour la durée réglée dans la configuration, une fois par
+créneau. Filtre : la zone. Variables : `duration_minutes`,
+`average_intensity`, `end_time`, `zone`. Dans une zone qui reste à 0 g/kWh
+(souvent le sud de l'Écosse), tous les créneaux se valent : il se déclenche de
+nouveau à la fin de chacun. Le créneau est recherché à chaque demi-heure sur un
+horizon qui avance : un créneau plus propre qui y entre peut remplacer celui
+annoncé sur les appareils avant qu'il ne commence.
+
+### Trouver le meilleur créneau (action)
+
+Choisissez une zone et une durée : l'action renvoie `start_time`, `end_time`,
+`minutes_until` et `average_intensity` aux actions suivantes de la scène, par
+exemple pour vous envoyer « Lancer la machine à laver à 02:30 » (choisissez-les
+dans la liste des variables de l'éditeur de scènes).
+
+## Exemples de scènes
+
+- Chaque soir à 20 h, **Trouver le meilleur créneau** de 2 heures, puis
+  envoyer « Meilleur moment pour le lave-vaisselle : » suivi de l'heure de
+  début, choisie dans la liste des variables.
+- **Début du meilleur créneau** → allumer la prise de la borne de la voiture ;
+  une scène programmée l'éteint le matin.
+- **Indice carbone devenu faible** → allumer le chauffe-eau, avec une
+  condition sur l'heure.
+
+## Limites
+
+- Données à la demi-heure : l'intégration lit chaque zone une fois par
+  demi-heure (deux appels pour la Grande-Bretagne, un pour une région ou un
+  code postal), seulement si son appareil est ajouté ou son widget affiché.
+  L'API ne demande pas de clé et n'annonce pas de quota ; elle est utilisée
+  avec cette retenue.
+- Si l'API est injoignable, les appareils suivent la dernière prévision sur
+  48 h, et l'écran de configuration signale les zones illisibles.
+- Les heures sont dans le fuseau horaire de Gladys.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« Lecture impossible : RG10 »** : l'API ne connaît pas ce code postal, ou
+  ne répond pas. Le bouton **Tester la connexion** dit lequel.
+- **Aucun appareil dans Découverte** : aucune zone n'est suivie ; cochez la
+  Grande-Bretagne ou choisissez une région ou un code postal.
+- Journaux : l'intégration note son démarrage, les zones suivies et les
+  échecs. Pour le détail, réglez la variable d'environnement
+  `LOG_LEVEL=debug`.
+
+## Crédits
+
+Données : API Carbon Intensity de NESO, CC BY 4.0 — « Carbon Intensity data
+from NESO ». Documentation de l'API :
+<https://carbon-intensity.github.io/api-definitions/>. Cette intégration est
+sans lien avec NESO.
