@@ -1,177 +1,819 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Carbon Intensity UK",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Carbon intensity of British electricity (NESO): now, 48 h forecast, best time to use power.",
+    "fr": "Intensité carbone de l'électricité britannique (NESO) : actuelle, prévue sur 48 h, meilleur créneau.",
+    "de": "CO₂-Intensität des britischen Stroms (NESO): aktuell, 48-h-Prognose, bestes Zeitfenster.",
+    "es": "Intensidad de carbono de la electricidad británica (NESO): actual, previsión 48 h, mejor franja."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
-  "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "docker_image": "ghcr.io/guim31/gladys-carbon-intensity-uk:1.0.0",
+  "gladys_version": ">=5.3.0",
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-carbon-intensity-uk/main/cover.png",
+  "categories": ["energy"],
+  "countries": ["GB"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Open data from NESO",
+        "fr": "Les données ouvertes de NESO",
+        "de": "Offene Daten von NESO",
+        "es": "Datos abiertos de NESO"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "The Carbon Intensity API of NESO (Great Britain's electricity system operator) needs no account and no key. Follow Great Britain, regions or postcodes: one device each. Not affiliated with NESO.",
+        "fr": "L'API Carbon Intensity de NESO (gestionnaire du réseau électrique britannique) ne demande ni compte ni clé. Suivez la Grande-Bretagne, des régions ou des codes postaux : un appareil chacun. Sans lien avec NESO.",
+        "de": "Die Carbon Intensity API von NESO (Betreiber des britischen Stromnetzes) braucht weder Konto noch Schlüssel. Verfolge Großbritannien, Regionen oder Postleitzahlen: je ein Gerät. Nicht mit NESO verbunden.",
+        "es": "La API Carbon Intensity de NESO (operador de la red eléctrica británica) no requiere cuenta ni clave. Siga Gran Bretaña, regiones o códigos postales: un dispositivo cada uno. Sin relación con NESO."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://carbonintensity.org.uk",
+          "label": {
+            "en": "Carbon Intensity API",
+            "fr": "API Carbon Intensity",
+            "de": "Carbon Intensity API",
+            "es": "API Carbon Intensity"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Language of the names",
+        "fr": "Langue des noms",
+        "de": "Sprache der Namen",
+        "es": "Idioma de los nombres"
+      },
+      "description": {
+        "en": "Language of the device and feature names (fixed when a device is added) and of the texts sent to scenes.",
+        "fr": "Langue des noms d'appareils et de fonctionnalités (figés à l'ajout d'un appareil) et des textes envoyés aux scènes.",
+        "de": "Sprache der Geräte- und Funktionsnamen (beim Hinzufügen festgelegt) und der Texte für Szenen.",
+        "es": "Idioma de los nombres de dispositivos y funciones (fijados al añadir un dispositivo) y de los textos enviados a las escenas."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "fr",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "national",
+      "type": "boolean",
+      "label": {
+        "en": "Great Britain as a whole",
+        "fr": "Grande-Bretagne entière",
+        "de": "Ganz Großbritannien",
+        "es": "Gran Bretaña entera"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "One device for the national figures (England, Scotland and Wales).",
+        "fr": "Un appareil pour les chiffres nationaux (Angleterre, Écosse et pays de Galles).",
+        "de": "Ein Gerät für die landesweiten Werte (England, Schottland und Wales).",
+        "es": "Un dispositivo para las cifras nacionales (Inglaterra, Escocia y Gales)."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": true
+    },
+    {
+      "key": "regions",
+      "type": "multi_select",
+      "label": {
+        "en": "Regions",
+        "fr": "Régions",
+        "de": "Regionen",
+        "es": "Regiones"
+      },
+      "description": {
+        "en": "The regions of the distribution networks, plus England, Scotland and Wales: one device each.",
+        "fr": "Les régions des réseaux de distribution, plus l'Angleterre, l'Écosse et le pays de Galles : un appareil chacune.",
+        "de": "Die Regionen der Verteilnetze, dazu England, Schottland und Wales: je ein Gerät.",
+        "es": "Las regiones de las redes de distribución, más Inglaterra, Escocia y Gales: un dispositivo cada una."
+      },
+      "required": false,
+      "options": [
+        {
+          "value": "1",
+          "label": {
+            "en": "North Scotland",
+            "fr": "Nord de l’Écosse",
+            "de": "Nordschottland",
+            "es": "Norte de Escocia"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "en": "South Scotland",
+            "fr": "Sud de l’Écosse",
+            "de": "Südschottland",
+            "es": "Sur de Escocia"
+          }
+        },
+        {
+          "value": "3",
+          "label": {
+            "en": "North West England",
+            "fr": "Nord-Ouest de l’Angleterre",
+            "de": "Nordwestengland",
+            "es": "Noroeste de Inglaterra"
+          }
+        },
+        {
+          "value": "4",
+          "label": {
+            "en": "North East England",
+            "fr": "Nord-Est de l’Angleterre",
+            "de": "Nordostengland",
+            "es": "Noreste de Inglaterra"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "en": "Yorkshire",
+            "fr": "Yorkshire",
+            "de": "Yorkshire",
+            "es": "Yorkshire"
+          }
+        },
+        {
+          "value": "6",
+          "label": {
+            "en": "North Wales & Merseyside",
+            "fr": "Nord du pays de Galles et Merseyside",
+            "de": "Nordwales und Merseyside",
+            "es": "Norte de Gales y Merseyside"
+          }
+        },
+        {
+          "value": "7",
+          "label": {
+            "en": "South Wales",
+            "fr": "Sud du pays de Galles",
+            "de": "Südwales",
+            "es": "Sur de Gales"
+          }
+        },
+        {
+          "value": "8",
+          "label": {
+            "en": "West Midlands",
+            "fr": "West Midlands",
+            "de": "West Midlands",
+            "es": "West Midlands"
+          }
+        },
+        {
+          "value": "9",
+          "label": {
+            "en": "East Midlands",
+            "fr": "East Midlands",
+            "de": "East Midlands",
+            "es": "East Midlands"
+          }
+        },
+        {
+          "value": "10",
+          "label": {
+            "en": "East England",
+            "fr": "Est de l’Angleterre",
+            "de": "Ostengland",
+            "es": "Este de Inglaterra"
+          }
+        },
+        {
+          "value": "11",
+          "label": {
+            "en": "South West England",
+            "fr": "Sud-Ouest de l’Angleterre",
+            "de": "Südwestengland",
+            "es": "Suroeste de Inglaterra"
+          }
+        },
+        {
+          "value": "12",
+          "label": {
+            "en": "South England",
+            "fr": "Sud de l’Angleterre",
+            "de": "Südengland",
+            "es": "Sur de Inglaterra"
+          }
+        },
+        {
+          "value": "13",
+          "label": {
+            "en": "London",
+            "fr": "Londres",
+            "de": "London",
+            "es": "Londres"
+          }
+        },
+        {
+          "value": "14",
+          "label": {
+            "en": "South East England",
+            "fr": "Sud-Est de l’Angleterre",
+            "de": "Südostengland",
+            "es": "Sureste de Inglaterra"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "England (whole)",
+            "fr": "Angleterre (entière)",
+            "de": "England (gesamt)",
+            "es": "Inglaterra (entera)"
+          }
+        },
+        {
+          "value": "16",
+          "label": {
+            "en": "Scotland (whole)",
+            "fr": "Écosse (entière)",
+            "de": "Schottland (gesamt)",
+            "es": "Escocia (entera)"
+          }
+        },
+        {
+          "value": "17",
+          "label": {
+            "en": "Wales (whole)",
+            "fr": "Pays de Galles (entier)",
+            "de": "Wales (gesamt)",
+            "es": "Gales (entero)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "postcodes",
+      "type": "string",
+      "label": {
+        "en": "Postcodes",
+        "fr": "Codes postaux",
+        "de": "Postleitzahlen",
+        "es": "Códigos postales"
+      },
+      "description": {
+        "en": "Up to five UK postcodes, comma-separated. Only the first part counts (RG10 for RG10 9AB): the API maps it to its region.",
+        "fr": "Jusqu'à cinq codes postaux britanniques, séparés par des virgules. Seule la première partie compte (RG10 pour RG10 9AB) : l'API en déduit la région.",
+        "de": "Bis zu fünf britische Postleitzahlen, durch Kommas getrennt. Nur der erste Teil zählt (RG10 für RG10 9AB): Die API leitet die Region ab.",
+        "es": "Hasta cinco códigos postales británicos, separados por comas. Solo cuenta la primera parte (RG10 para RG10 9AB): la API deduce la región."
+      },
+      "placeholder": {
+        "en": "e.g. RG10, EH1",
+        "fr": "ex. RG10, EH1",
+        "de": "z. B. RG10, EH1",
+        "es": "p. ej. RG10, EH1"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "best_window_minutes",
+      "type": "select",
+      "label": {
+        "en": "Length of the best window",
+        "fr": "Durée du meilleur créneau",
+        "de": "Länge des besten Zeitfensters",
+        "es": "Duración de la mejor franja"
+      },
+      "description": {
+        "en": "The cleanest run of this length in the next 24 hours: e.g. the time a dishwasher or a car charge takes.",
+        "fr": "La période la plus propre de cette durée dans les 24 h à venir : par exemple le temps d'un lave-vaisselle ou d'une recharge.",
+        "de": "Der sauberste Zeitraum dieser Länge in den nächsten 24 Stunden: etwa die Dauer einer Spülmaschine oder einer Ladung.",
+        "es": "El periodo más limpio de esta duración en las próximas 24 horas: por ejemplo, un lavavajillas o una recarga."
+      },
+      "required": false,
+      "default": "180",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 min",
+            "fr": "30 min",
+            "de": "30 Min.",
+            "es": "30 min"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "1 h",
+            "fr": "1 h",
+            "de": "1 h",
+            "es": "1 h"
+          }
+        },
+        {
+          "value": "90",
+          "label": {
+            "en": "1 h 30",
+            "fr": "1 h 30",
+            "de": "1 h 30",
+            "es": "1 h 30"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "en": "2 h",
+            "fr": "2 h",
+            "de": "2 h",
+            "es": "2 h"
+          }
+        },
+        {
+          "value": "180",
+          "label": {
+            "en": "3 h",
+            "fr": "3 h",
+            "de": "3 h",
+            "es": "3 h"
+          }
+        },
+        {
+          "value": "240",
+          "label": {
+            "en": "4 h",
+            "fr": "4 h",
+            "de": "4 h",
+            "es": "4 h"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 h",
+            "fr": "5 h",
+            "de": "5 h",
+            "es": "5 h"
+          }
+        },
+        {
+          "value": "360",
+          "label": {
+            "en": "6 h",
+            "fr": "6 h",
+            "de": "6 h",
+            "es": "6 h"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "carbon_index_low",
+      "label": {
+        "en": "Carbon index turns low",
+        "fr": "Indice carbone devenu faible",
+        "de": "CO₂-Index wird niedrig",
+        "es": "Índice de carbono pasa a bajo"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "The index of a zone goes from moderate or worse to low or very low: a good time to use electricity.",
+        "fr": "L'indice d'une zone passe de modéré ou pire à faible ou très faible : un bon moment pour consommer.",
+        "de": "Der Index einer Zone fällt von mittel oder schlechter auf niedrig oder sehr niedrig: ein guter Moment für Strom.",
+        "es": "El índice de una zona pasa de moderado o peor a bajo o muy bajo: un buen momento para consumir."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Zone",
+            "fr": "Zone",
+            "de": "Zone",
+            "es": "Zona"
+          }
         },
         {
-          "key": "target",
+          "key": "level",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "label": {
+            "en": "Index",
+            "fr": "Indice",
+            "de": "Index",
+            "es": "Índice"
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "very_low",
+              "label": {
+                "en": "Very low",
+                "fr": "Très faible",
+                "de": "Sehr niedrig",
+                "es": "Muy bajo"
+              }
+            },
+            {
+              "value": "low",
+              "label": {
+                "en": "Low",
+                "fr": "Faible",
+                "de": "Niedrig",
+                "es": "Bajo"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "level",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Index key (very_low, low)",
+            "fr": "Clé de l'indice (very_low, low)",
+            "de": "Index-Schlüssel (very_low, low)",
+            "es": "Clave del índice (very_low, low)"
+          }
+        },
+        {
+          "key": "index",
+          "type": "number",
+          "label": {
+            "en": "Index (1 very low, 2 low)",
+            "fr": "Indice (1 très faible, 2 faible)",
+            "de": "Index (1 sehr niedrig, 2 niedrig)",
+            "es": "Índice (1 muy bajo, 2 bajo)"
+          }
+        },
+        {
+          "key": "index_label",
+          "type": "string",
+          "label": {
+            "en": "Index, as a word",
+            "fr": "Indice, en toutes lettres",
+            "de": "Index als Wort",
+            "es": "Índice, en palabras"
+          }
+        },
+        {
+          "key": "intensity",
+          "type": "number",
+          "label": {
+            "en": "Intensity (g/kWh)",
+            "fr": "Intensité (g/kWh)",
+            "de": "Intensität (g/kWh)",
+            "es": "Intensidad (g/kWh)"
+          }
+        },
+        {
+          "key": "zone",
+          "type": "string",
+          "label": {
+            "en": "Zone",
+            "fr": "Zone",
+            "de": "Zone",
+            "es": "Zona"
+          }
+        }
+      ]
+    },
+    {
+      "key": "best_window_started",
+      "label": {
+        "en": "Best window starts",
+        "fr": "Début du meilleur créneau",
+        "de": "Bestes Zeitfenster beginnt",
+        "es": "Empieza la mejor franja"
+      },
+      "description": {
+        "en": "The cleanest window of the next 24 hours (length set in the configuration) begins now. Once per window.",
+        "fr": "Le créneau le plus propre des 24 h à venir (durée réglée dans la configuration) commence. Une fois par créneau.",
+        "de": "Das sauberste Zeitfenster der nächsten 24 Stunden (Länge in der Konfiguration) beginnt jetzt. Einmal pro Fenster.",
+        "es": "Empieza la franja más limpia de las próximas 24 horas (duración fijada en la configuración). Una vez por franja."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Zone",
+            "fr": "Zone",
+            "de": "Zone",
+            "es": "Zona"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "duration_minutes",
+          "type": "number",
+          "label": {
+            "en": "Length (minutes)",
+            "fr": "Durée (minutes)",
+            "de": "Länge (Minuten)",
+            "es": "Duración (minutos)"
+          }
+        },
+        {
+          "key": "average_intensity",
+          "type": "number",
+          "label": {
+            "en": "Average intensity (g/kWh)",
+            "fr": "Intensité moyenne (g/kWh)",
+            "de": "Mittlere Intensität (g/kWh)",
+            "es": "Intensidad media (g/kWh)"
+          }
+        },
+        {
+          "key": "end_time",
+          "type": "string",
+          "label": {
+            "en": "End time",
+            "fr": "Heure de fin",
+            "de": "Endzeit",
+            "es": "Hora de fin"
+          }
+        },
+        {
+          "key": "zone",
+          "type": "string",
+          "label": {
+            "en": "Zone",
+            "fr": "Zone",
+            "de": "Zone",
+            "es": "Zona"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "find_best_window",
+      "label": {
+        "en": "Find the best window",
+        "fr": "Trouver le meilleur créneau",
+        "de": "Bestes Zeitfenster finden",
+        "es": "Buscar la mejor franja"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "The cleanest window of a given length in the next 24 hours, for the following actions.",
+        "fr": "Le créneau le plus propre d'une durée donnée dans les 24 h à venir, pour les actions suivantes.",
+        "de": "Das sauberste Zeitfenster einer Länge in den nächsten 24 Stunden, für die folgenden Aktionen.",
+        "es": "La franja más limpia de una duración dada en las próximas 24 horas, para las acciones siguientes."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Zone",
+            "fr": "Zone",
+            "de": "Zone",
+            "es": "Zona"
+          },
           "required": true
+        },
+        {
+          "key": "duration",
+          "type": "select",
+          "label": {
+            "en": "Length",
+            "fr": "Durée",
+            "de": "Länge",
+            "es": "Duración"
+          },
+          "required": true,
+          "default": "180",
+          "options": [
+            {
+              "value": "30",
+              "label": {
+                "en": "30 min",
+                "fr": "30 min",
+                "de": "30 Min.",
+                "es": "30 min"
+              }
+            },
+            {
+              "value": "60",
+              "label": {
+                "en": "1 h",
+                "fr": "1 h",
+                "de": "1 h",
+                "es": "1 h"
+              }
+            },
+            {
+              "value": "90",
+              "label": {
+                "en": "1 h 30",
+                "fr": "1 h 30",
+                "de": "1 h 30",
+                "es": "1 h 30"
+              }
+            },
+            {
+              "value": "120",
+              "label": {
+                "en": "2 h",
+                "fr": "2 h",
+                "de": "2 h",
+                "es": "2 h"
+              }
+            },
+            {
+              "value": "180",
+              "label": {
+                "en": "3 h",
+                "fr": "3 h",
+                "de": "3 h",
+                "es": "3 h"
+              }
+            },
+            {
+              "value": "240",
+              "label": {
+                "en": "4 h",
+                "fr": "4 h",
+                "de": "4 h",
+                "es": "4 h"
+              }
+            },
+            {
+              "value": "300",
+              "label": {
+                "en": "5 h",
+                "fr": "5 h",
+                "de": "5 h",
+                "es": "5 h"
+              }
+            },
+            {
+              "value": "360",
+              "label": {
+                "en": "6 h",
+                "fr": "6 h",
+                "de": "6 h",
+                "es": "6 h"
+              }
+            }
+          ]
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "start_time",
+          "type": "string",
+          "label": {
+            "en": "Start time",
+            "fr": "Heure de début",
+            "de": "Startzeit",
+            "es": "Hora de inicio"
+          }
+        },
+        {
+          "key": "end_time",
+          "type": "string",
+          "label": {
+            "en": "End time",
+            "fr": "Heure de fin",
+            "de": "Endzeit",
+            "es": "Hora de fin"
+          }
+        },
+        {
+          "key": "minutes_until",
+          "type": "number",
+          "label": {
+            "en": "Minutes until it starts",
+            "fr": "Minutes avant le début",
+            "de": "Minuten bis zum Beginn",
+            "es": "Minutos hasta el inicio"
+          }
+        },
+        {
+          "key": "average_intensity",
+          "type": "number",
+          "label": {
+            "en": "Average intensity (g/kWh)",
+            "fr": "Intensité moyenne (g/kWh)",
+            "de": "Mittlere Intensität (g/kWh)",
+            "es": "Intensidad media (g/kWh)"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "forecast",
+      "label": {
+        "en": "Carbon intensity forecast",
+        "fr": "Prévision carbone",
+        "de": "CO₂-Prognose",
+        "es": "Previsión de carbono"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Intensity now, 24-hour forecast curve, best window and electricity mix of a zone.",
+        "fr": "Intensité actuelle, courbe prévue sur 24 h, meilleur créneau et mix électrique d'une zone.",
+        "de": "Aktuelle Intensität, 24-h-Prognosekurve, bestes Zeitfenster und Strommix einer Zone.",
+        "es": "Intensidad actual, curva prevista a 24 h, mejor franja y mix eléctrico de una zona."
+      },
+      "icon": "cloud",
+      "settings": [
+        {
+          "key": "zone",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Zone",
+            "fr": "Zone",
+            "de": "Zone",
+            "es": "Zona"
+          },
+          "required": false
+        },
+        {
+          "key": "show_best_window",
+          "type": "boolean",
+          "label": {
+            "en": "Show the best window",
+            "fr": "Afficher le meilleur créneau",
+            "de": "Bestes Zeitfenster anzeigen",
+            "es": "Mostrar la mejor franja"
+          },
+          "required": false,
+          "default": true
+        },
+        {
+          "key": "show_mix",
+          "type": "boolean",
+          "label": {
+            "en": "Show the electricity mix",
+            "fr": "Afficher le mix électrique",
+            "de": "Strommix anzeigen",
+            "es": "Mostrar el mix eléctrico"
+          },
+          "required": false,
+          "default": true
+        }
+      ]
     }
   ]
 }
