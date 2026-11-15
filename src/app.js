@@ -199,7 +199,8 @@ export function registerHandlers(
             zone: name,
           });
         }
-        if (remember && previous !== slot.index) {
+        // Deleted while the event was on its way: nothing to remember.
+        if (remember && previous !== slot.index && isCreated(zone)) {
           persisted.lastIndex[zone.key] = slot.index;
           changed = true;
         }
@@ -214,7 +215,7 @@ export function registerHandlers(
           end_time: clockTime(best.end, timeZone),
           zone: name,
         });
-        if (fired) {
+        if (fired && isCreated(zone)) {
           persisted.announcedUntil[zone.key] = best.end;
           changed = true;
           logger.info(`${zone.key}: best window started, until ${clockTime(best.end, timeZone)}`);
@@ -365,7 +366,9 @@ export function registerHandlers(
    * a zone whose device is not added), within the callers' deadlines.
    */
   async function readingOf(zone) {
-    if (!readings.has(zone.key) && isDue(zone)) {
+    // A zone whose device is added is kept fresh by the timer; another one
+    // (a widget alone) may hold a reading an hour old.
+    if ((!readings.has(zone.key) || !isCreated(zone)) && isDue(zone)) {
       await refreshZone(zone);
     }
     return readings.get(zone.key) ?? null;
