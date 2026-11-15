@@ -69,7 +69,7 @@ Postleitzahl ist).
 | CO₂-armer Anteil, erneuerbarer Anteil | %                                                        |
 | Wind-, Solar-, Gasanteil…             | % jeder Quelle, gerundet                                 |
 | Beginn des besten Zeitfensters        | Uhrzeit, zum Beispiel `03:00`                            |
-| Bestes Zeitfenster in                 | Minuten, 0 sobald es begonnen hat                        |
+| Bestes Zeitfenster in                 | Minuten, auf 5 aufgerundet, 0 sobald es begonnen hat     |
 | Intensität des besten Fensters        | sein Mittelwert in gCO₂/kWh                              |
 
 Die Intensität ist die **Prognose** von NESO für die laufende halbe Stunde: Die
@@ -102,18 +102,22 @@ nächsten 24 Stunden eröffnet, für die in der Konfiguration eingestellte Läng
 einmal pro Fenster. Filter: die Zone. Variablen: `duration_minutes`,
 `average_intensity`, `end_time`, `zone`. In einer Zone, die bei 0 g/kWh bleibt
 (oft Südschottland), sind alle Fenster gleich sauber: Der Auslöser kommt am
-Ende jedes Fensters erneut.
+Ende jedes Fensters erneut. Das Fenster wird jede halbe Stunde auf einem
+mitlaufenden Horizont neu gesucht: Ein saubereres Fenster, das hinzukommt, kann
+das auf den Geräten angekündigte ersetzen, bevor es beginnt.
 
 ### Bestes Zeitfenster finden (Aktion)
 
 Wähle eine Zone und eine Länge: Die Aktion liefert `start_time`, `end_time`,
 `minutes_until` und `average_intensity` an die folgenden Aktionen der Szene,
-etwa um dir „Waschmaschine um 02:30 starten“ zu schicken.
+etwa um dir „Waschmaschine um 02:30 starten“ zu schicken (wähle sie in der
+Variablenliste des Szenen-Editors).
 
 ## Szenen-Beispiele
 
 - Jeden Abend um 20 Uhr **Bestes Zeitfenster finden** für 2 Stunden, dann
-  „Beste Zeit für die Spülmaschine: {{start_time}}“ senden.
+  „Beste Zeit für die Spülmaschine:“ mit der Startzeit aus der Variablenliste
+  senden.
 - **Bestes Zeitfenster beginnt** → die Steckdose der Wallbox einschalten;
   eine geplante Szene schaltet sie morgens aus.
 - **CO₂-Index wird niedrig** → den Warmwasserspeicher einschalten, mit einer

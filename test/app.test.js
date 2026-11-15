@@ -122,7 +122,7 @@ test('an unknown postcode: said in the status and the action, asked again every 
   assert.equal(ack.success, true);
   assert.equal(
     ack.data.message.en,
-    'ZZ99: unknown to the API · Ignored, not a UK postcode: BANANA.',
+    'ZZ99: unknown to the API · Ignored (not a UK postcode, or more than five): BANANA.',
   );
 });
 
@@ -347,4 +347,61 @@ test('quiet logs: nothing at info in a normal cycle, one line per failure and re
   assert.equal(lines.length, 2, lines.join('\n'));
   assert.match(lines.join('\n'), /national cannot be read: .*HTTP 503/);
   assert.match(lines.join('\n'), /postcode-rg10 cannot be read: .*HTTP 503/);
+});
+
+test('a configuration change: zones removed are forgotten, zones added read at once', async (t) => {
+  const world = await createWorld({ config: { postcodes: 'RG10' } });
+  t.after(() => world.app.stop());
+  assert.ok('postcode-rg10' in world.app.persisted.lastIndex);
+  await world.fake.configUpdated({ national: true, postcodes: '', regions: ['13'] });
+  assert.deepEqual(
+    world.fake.discoveredDevices.map((d) => d.external_id),
+    [NATIONAL, 'ext:test-integration:zone:region-13'],
+  );
+  assert.equal('postcode-rg10' in world.app.persisted.lastIndex, false);
+  assert.equal(world.app.readings.has('postcode-rg10'), false);
+  // The region's device is not added: not read until it is (or a widget shows it).
+  assert.equal(world.api.count('regionid/13'), 0);
+  assert.equal(world.fake.connectionStatus.connected, true);
+});
+
+test('a device deleted: its trigger memory goes, a later re-add does not fire a stale drop', async (t) => {
+  const world = await createWorld({ config: { postcodes: '' } });
+  t.after(() => world.app.stop());
+  assert.equal(world.app.persisted.lastIndex.national, 4);
+  const [device] = world.fake.discoveredDevices;
+  await world.fake.deviceDeleted({ ...device });
+  assert.equal(world.app.persisted.lastIndex.national, undefined);
+  world.api.bodies.national = withSlot(NATIONAL_BODY, '2026-11-15T16:30Z', { index: 'low' });
+  world.clock.advance(SLOT_MS);
+  await world.fake.deviceCreated({ ...device });
+  await world.app.tick();
+  assert.equal(world.fake.sceneEvents.filter((e) => e.key === INDEX_TRIGGER_KEY).length, 0);
+});
+
+test('one zone failing among healthy ones: only it is named, the others go on', async (t) => {
+  const world = await createWorld({ config: { postcodes: 'RG10, EH1' } });
+  t.after(() => world.app.stop());
+  const answer = world.api.answer;
+  world.api.answer = (url) => (url.includes('EH1') ? json(503, {}) : answer(url));
+  world.clock.advance(SLOT_MS);
+  await world.app.tick();
+  assert.deepEqual(world.fake.connectionStatus.message.en, 'Cannot be read: EH1.');
+  assert.equal(world.fake.lastState(`${RG10}:intensity`), 229);
+});
+
+test('the best window countdown is rounded to 5 minutes, without history', async (t) => {
+  const world = await createWorld({ config: { postcodes: '' } });
+  t.after(() => world.app.stop());
+  const feature = world.fake.discoveredDevices[0].features.find((f) =>
+    f.external_id.endsWith(':best_window_in'),
+  );
+  assert.equal(feature.keep_history, false);
+  assert.equal(world.fake.lastState(`${NATIONAL}:best_window_in`) % 5, 0);
+  const before = world.fake.states.length;
+  world.clock.advance(TICK_MS);
+  await world.app.tick();
+  world.clock.advance(TICK_MS);
+  await world.app.tick();
+  assert.ok(world.fake.states.length - before <= 1);
 });

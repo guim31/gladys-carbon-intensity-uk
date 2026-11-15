@@ -67,7 +67,7 @@ Reads every zone at once and shows its current intensity, or what went wrong
 | Low-carbon share, renewable share | %                                                  |
 | Wind, solar, nuclear, gas… share  | % of each source, rounded                          |
 | Best window start                 | time, for example `03:00`                          |
-| Best window starts in             | minutes, 0 once it has begun                       |
+| Best window starts in             | minutes, rounded up to 5, 0 once it has begun      |
 | Best window intensity             | its average gCO₂/kWh                               |
 
 The intensity is NESO's **forecast** for the half-hour in progress: the API has
@@ -97,19 +97,22 @@ Fires when the half-hour in progress opens the cleanest window of the next 24
 hours, for the length set in the configuration, once per window. Filter: the
 zone. Variables: `duration_minutes`, `average_intensity`, `end_time`, `zone`.
 In a zone that stays at 0 g/kWh (often South Scotland), every window is
-equally clean: it fires again at the end of each one.
+equally clean: it fires again at the end of each one. The window is looked for
+again every half-hour on a horizon that moves on: a cleaner window entering
+the horizon can replace the one announced on the devices before it starts.
 
 ### Find the best window (action)
 
 Choose a zone and a length: the action returns `start_time`, `end_time`,
 `minutes_until` and `average_intensity` for the following actions of the
-scene, for example to send yourself a message "Start the washing machine at
-02:30".
+scene (pick them in the variable list of the scene editor), for example to send
+yourself a message "Start the washing machine at 02:30".
 
 ## Scene examples
 
 - Every evening at 8 pm, **Find the best window** of 2 hours, then send
-  "Best time for the dishwasher: {{start_time}}".
+  "Best time for the dishwasher:" followed by its start time, picked in the
+  variable list.
 - **Best window starts** → switch on the plug of the electric car charger;
   a scheduled scene switches it off in the morning.
 - **Carbon index turns low** → turn on the water heater, with a condition on

@@ -8,6 +8,7 @@ import { API_URL, UnknownZoneError, apiTime, fetchZone, parseSlots } from '../sr
 import { normalizeConfig, parsePostcodes, zonesOf } from '../src/config.js';
 import { SLOT_MS, bestWindow, currentSlot, minutesUntil, upcoming } from '../src/forecast.js';
 import { HttpError } from '../src/http.js';
+import { clockTime } from '../src/i18n.js';
 import { LONDON_BODY, NATIONAL_BODY, START, createFakeApi, json } from './helpers/world.js';
 
 /** Hand-made slots from a list of intensities, starting at START's slot. */
@@ -199,4 +200,11 @@ test('postcodes: the outward part, upper case, five at most, the rest rejected',
   assert.equal(normalizeConfig({}).bestWindowMinutes, 180);
   assert.equal(normalizeConfig({ best_window_minutes: '45' }).bestWindowMinutes, 180);
   assert.equal(normalizeConfig({ language: 'it' }).language, 'fr');
+});
+
+test('clock times in the Gladys time zone, summer time included; a postcode without its space', () => {
+  assert.equal(clockTime(Date.UTC(2026, 10, 16, 3, 0), 'Europe/London'), '03:00');
+  assert.equal(clockTime(Date.UTC(2026, 6, 16, 3, 0), 'Europe/London'), '04:00');
+  assert.equal(clockTime(Date.UTC(2026, 6, 16, 3, 0), 'Europe/Paris'), '05:00');
+  assert.deepEqual(parsePostcodes('RG109AB, sw1a1aa, EH1').postcodes, ['RG10', 'SW1A', 'EH1']);
 });

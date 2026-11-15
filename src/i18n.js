@@ -298,10 +298,10 @@ export const MESSAGES = {
     each(
       (lang) =>
         ({
-          en: `Ignored, not a UK postcode: ${codes.join(', ')}.`,
-          fr: `Ignoré, pas un code postal britannique : ${codes.join(', ')}.`,
-          de: `Ignoriert, keine britische Postleitzahl: ${codes.join(', ')}.`,
-          es: `Ignorado, no es un código postal británico: ${codes.join(', ')}.`,
+          en: `Ignored (not a UK postcode, or more than five): ${codes.join(', ')}.`,
+          fr: `Ignoré (pas un code postal britannique, ou plus de cinq) : ${codes.join(', ')}.`,
+          de: `Ignoriert (keine britische Postleitzahl oder mehr als fünf): ${codes.join(', ')}.`,
+          es: `Ignorado (no es un código postal británico, o más de cinco): ${codes.join(', ')}.`,
         })[lang],
     ),
   updatedAt: (time) =>

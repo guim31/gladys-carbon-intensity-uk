@@ -61,16 +61,16 @@ código postal).
 
 ### Intensidad de carbono (uno por zona)
 
-| Función                                | Valor                                              |
-| -------------------------------------- | -------------------------------------------------- |
-| Intensidad de carbono                  | gCO₂/kWh de la media hora en curso                 |
-| Índice de carbono (1 a 5)              | 1 muy bajo, 2 bajo, 3 moderado, 4 alto, 5 muy alto |
-| Índice de carbono                      | el mismo índice, en palabras                       |
-| Cuota baja en carbono, cuota renovable | %                                                  |
-| Cuota eólica, solar, de gas…           | % de cada fuente, redondeado                       |
-| Inicio de la mejor franja              | hora, por ejemplo `03:00`                          |
-| Mejor franja dentro de                 | minutos, 0 una vez empezada                        |
-| Intensidad de la mejor franja          | su media en gCO₂/kWh                               |
+| Función                                | Valor                                                    |
+| -------------------------------------- | -------------------------------------------------------- |
+| Intensidad de carbono                  | gCO₂/kWh de la media hora en curso                       |
+| Índice de carbono (1 a 5)              | 1 muy bajo, 2 bajo, 3 moderado, 4 alto, 5 muy alto       |
+| Índice de carbono                      | el mismo índice, en palabras                             |
+| Cuota baja en carbono, cuota renovable | %                                                        |
+| Cuota eólica, solar, de gas…           | % de cada fuente, redondeado                             |
+| Inicio de la mejor franja              | hora, por ejemplo `03:00`                                |
+| Mejor franja dentro de                 | minutos, redondeado a 5 hacia arriba, 0 una vez empezada |
+| Intensidad de la mejor franja          | su media en gCO₂/kWh                                     |
 
 La intensidad es la **previsión** de NESO para la media hora en curso: la API no
 tiene valor medido para las regiones, ni para la media hora en curso. «Baja en
@@ -100,18 +100,22 @@ próximas 24 horas, para la duración fijada en la configuración, una vez por
 franja. Filtro: la zona. Variables: `duration_minutes`, `average_intensity`,
 `end_time`, `zone`. En una zona que se queda en 0 g/kWh (a menudo el sur de
 Escocia), todas las franjas son igual de limpias: se activa de nuevo al final de
-cada una.
+cada una. La franja se busca cada media hora en un horizonte que avanza: una
+franja más limpia que entra en él puede sustituir a la anunciada en los
+dispositivos antes de que empiece.
 
 ### Buscar la mejor franja (acción)
 
 Elija una zona y una duración: la acción devuelve `start_time`, `end_time`,
 `minutes_until` y `average_intensity` a las acciones siguientes de la escena,
-por ejemplo para enviarse «Poner la lavadora a las 02:30».
+por ejemplo para enviarse «Poner la lavadora a las 02:30» (elíjalas en la lista
+de variables del editor de escenas).
 
 ## Ejemplos de escenas
 
 - Cada noche a las 20:00, **Buscar la mejor franja** de 2 horas, y luego enviar
-  «Mejor momento para el lavavajillas: {{start_time}}».
+  «Mejor momento para el lavavajillas:» seguido de la hora de inicio, elegida en
+  la lista de variables.
 - **Empieza la mejor franja** → encender el enchufe del cargador del coche;
   una escena programada lo apaga por la mañana.
 - **Índice de carbono pasa a bajo** → encender el termo eléctrico, con una

@@ -95,14 +95,19 @@ export function parsePostcodes(raw) {
     if (text === '') {
       continue;
     }
-    const outward = text.split(/\s+/)[0];
+    // "RG109AB" typed without its space: the inward part is a digit and two letters.
+    const first = text.split(/\s+/)[0];
+    const outward = first.length > 4 ? first.replace(/\d[A-Z]{2}$/, '') : first;
     if (!OUTWARD.test(outward)) {
       rejected.push(text.slice(0, 20));
     } else if (!postcodes.includes(outward)) {
       postcodes.push(outward);
     }
   }
-  return { postcodes: postcodes.slice(0, MAX_POSTCODES), rejected };
+  return {
+    postcodes: postcodes.slice(0, MAX_POSTCODES),
+    rejected: [...rejected, ...postcodes.slice(MAX_POSTCODES)],
+  };
 }
 
 /**

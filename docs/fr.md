@@ -69,7 +69,7 @@ un code postal).
 | Part bas carbone, part renouvelable   | %                                                        |
 | Part de l'éolien, du solaire, du gaz… | % de chaque source, arrondi                              |
 | Début du meilleur créneau             | heure, par exemple `03:00`                               |
-| Meilleur créneau dans                 | minutes, 0 une fois commencé                             |
+| Meilleur créneau dans                 | minutes, arrondi à 5 au-dessus, 0 une fois commencé      |
 | Intensité du meilleur créneau         | sa moyenne en gCO₂/kWh                                   |
 
 L'intensité est la **prévision** de NESO pour la demi-heure en cours : l'API n'a
@@ -101,18 +101,22 @@ Se déclenche quand la demi-heure en cours ouvre le créneau le plus propre des
 créneau. Filtre : la zone. Variables : `duration_minutes`,
 `average_intensity`, `end_time`, `zone`. Dans une zone qui reste à 0 g/kWh
 (souvent le sud de l'Écosse), tous les créneaux se valent : il se déclenche de
-nouveau à la fin de chacun.
+nouveau à la fin de chacun. Le créneau est recherché à chaque demi-heure sur un
+horizon qui avance : un créneau plus propre qui y entre peut remplacer celui
+annoncé sur les appareils avant qu'il ne commence.
 
 ### Trouver le meilleur créneau (action)
 
 Choisissez une zone et une durée : l'action renvoie `start_time`, `end_time`,
 `minutes_until` et `average_intensity` aux actions suivantes de la scène, par
-exemple pour vous envoyer « Lancer la machine à laver à 02:30 ».
+exemple pour vous envoyer « Lancer la machine à laver à 02:30 » (choisissez-les
+dans la liste des variables de l'éditeur de scènes).
 
 ## Exemples de scènes
 
 - Chaque soir à 20 h, **Trouver le meilleur créneau** de 2 heures, puis
-  envoyer « Meilleur moment pour le lave-vaisselle : {{start_time}} ».
+  envoyer « Meilleur moment pour le lave-vaisselle : » suivi de l'heure de
+  début, choisie dans la liste des variables.
 - **Début du meilleur créneau** → allumer la prise de la borne de la voiture ;
   une scène programmée l'éteint le matin.
 - **Indice carbone devenu faible** → allumer le chauffe-eau, avec une

@@ -128,6 +128,9 @@ function buildZoneDevice(gladys, language, zone) {
         unit: DEVICE_FEATURE_UNITS.MINUTES,
         min: 0,
         max: 1440,
+        // A countdown: no history, and rounded to 5 minutes so it is not a
+        // new state every minute.
+        keep_history: false,
       }),
       intensity('best_window_intensity'),
     ],
@@ -192,7 +195,7 @@ export function zoneStates(gladys, zone, reading, { now, language, windowMinutes
   if (best) {
     states.push(
       text('best_window_start', clockTime(best.start, timeZone)),
-      state('best_window_in', minutesUntil(best.start, now)),
+      state('best_window_in', Math.ceil(minutesUntil(best.start, now) / 5) * 5),
       state('best_window_intensity', Math.round(best.average)),
     );
   }

@@ -230,6 +230,7 @@ export function registerHandlers(
   async function fire(key, data) {
     try {
       await gladys.publishSceneEvent(key, data);
+      gladysIssues.ok(`scene-${key}`, `Scene event ${key} accepted by Gladys again`);
       return true;
     } catch (err) {
       gladysIssues.fail(`scene-${key}`, `Scene event ${key} not sent to Gladys: ${err.message}`);
@@ -279,12 +280,10 @@ export function registerHandlers(
         logger.debug('Gladys unreachable: tick skipped');
         return;
       }
-      let fresh = false;
-      for (const zone of zones) {
-        if (wanted(zone) && (force || isDue(zone))) {
-          fresh = (await refreshZone(zone)) || fresh;
-        }
-      }
+      // In parallel (23 zones at most): a zone whose API call hangs must not
+      // hold back the slot change of the others.
+      const due = zones.filter((zone) => wanted(zone) && (force || isDue(zone)));
+      const fresh = (await Promise.all(due.map(refreshZone))).some(Boolean);
       await publishStates();
       await fireTriggers();
       await reportStatus();
@@ -321,16 +320,23 @@ export function registerHandlers(
     stopped = false;
     lastStatus = null;
     zones = zonesOf(config);
-    // Readings of zones no longer configured are dropped.
-    for (const key of readings.keys()) {
+    // Readings and trigger memory of zones no longer configured are dropped:
+    // a zone added again later starts afresh.
+    for (const key of new Set([
+      ...readings.keys(),
+      ...Object.keys(persisted.lastIndex),
+      ...Object.keys(persisted.announcedUntil),
+    ])) {
       if (!zones.some((zone) => zone.key === key)) {
-        readings.delete(key);
+        forgetZone(key);
       }
     }
     attempts.clear();
     unknown.clear();
     if (config.rejectedPostcodes.length > 0) {
-      logger.warn(`Ignored, not a UK postcode: ${config.rejectedPostcodes.join(', ')}`);
+      logger.warn(
+        `Postcodes ignored (not a UK postcode, or more than five): ${config.rejectedPostcodes.join(', ')}`,
+      );
     }
     try {
       await gladys.publishDiscoveredDevices(buildDevices(gladys, config));
@@ -344,9 +350,22 @@ export function registerHandlers(
     await tick({ force: true });
   }
 
-  /** The reading of a zone, read now when it is due (action, widget). */
+  function forgetZone(key) {
+    readings.delete(key);
+    if (key in persisted.lastIndex || key in persisted.announcedUntil) {
+      delete persisted.lastIndex[key];
+      delete persisted.announcedUntil[key];
+      store.save(persisted);
+    }
+  }
+
+  /**
+   * The reading of a zone for the action and the widget: the one held, the
+   * timer keeps it fresh; read now only when there is none (a widget showing
+   * a zone whose device is not added), within the callers' deadlines.
+   */
   async function readingOf(zone) {
-    if (isDue(zone)) {
+    if (!readings.has(zone.key) && isDue(zone)) {
       await refreshZone(zone);
     }
     return readings.get(zone.key) ?? null;
@@ -379,7 +398,13 @@ export function registerHandlers(
   };
   gladys.onDeviceCreated(onDeviceAdded);
   gladys.onDeviceUpdated(onDeviceAdded);
-  gladys.onDeviceDeleted(async () => {
+  // A device deleted: its trigger memory goes too, so adding it again later
+  // does not compare with an index read weeks before.
+  gladys.onDeviceDeleted(async (device) => {
+    const zone = zoneOfDevice(device?.external_id);
+    if (zone) {
+      forgetZone(zone.key);
+    }
     gladys.requestWidgetRefresh(WIDGET_KEY);
   });
 
