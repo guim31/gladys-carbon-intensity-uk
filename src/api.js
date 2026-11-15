@@ -12,12 +12,29 @@
 // The intensity of a slot is NESO's forecast: the "actual" national figure
 // only exists for slots already over, and the regions have none at all.
 // Answers seen on 15/11/2026: an unknown postcode gives HTTP 200 with the body
-// `null` (the routes without a date give a 400), an unknown region id a 400.
+// `null` (the routes without a date give a 400), an unknown region id a 400,
+// and the regional routes now and then a 500 that a second try a moment later
+// does not get: a 5xx is tried once more after RETRY_DELAY_MS.
 // -----------------------------------------------------------------------------
 
 import { HttpError, requestJson } from './http.js';
 
 export const API_URL = 'https://api.carbonintensity.org.uk';
+export const RETRY_DELAY_MS = 2000;
+const WHAT = 'Carbon Intensity API';
+
+/** One GET, tried again once after a 5xx. */
+async function getJson(fetchImpl, url, retryDelayMs) {
+  try {
+    return await requestJson(fetchImpl, url, {}, WHAT);
+  } catch (err) {
+    if (!(err.status >= 500)) {
+      throw err;
+    }
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    return requestJson(fetchImpl, url, {}, WHAT);
+  }
+}
 
 /** The fuels of the API, in its order; anything else is ignored. */
 export const FUELS = [
@@ -53,20 +70,21 @@ export function apiTime(ms) {
  * @param {typeof fetch} fetchImpl
  * @param {{ kind: string, id?: string }} zone
  * @param {number} now
+ * @param {{ retryDelayMs?: number }} [options]
  * @returns {Promise<{ name: string | null, slots: Slot[], mix: Record<string, number> | null, mixAt: string | null }>}
  *
  * @typedef {{ from: string, to: string, intensity: number, index: number | null, mix: Record<string, number> | null }} Slot
  */
-export async function fetchZone(fetchImpl, zone, now) {
+export async function fetchZone(fetchImpl, zone, now, { retryDelayMs = RETRY_DELAY_MS } = {}) {
   const from = apiTime(now);
   if (zone.kind === 'national') {
     const [forecast, generation] = await Promise.all([
-      requestJson(fetchImpl, `${API_URL}/intensity/${from}/fw48h`, {}, 'Carbon Intensity API'),
+      getJson(fetchImpl, `${API_URL}/intensity/${from}/fw48h`, retryDelayMs),
       // The mix is a bonus: the zone still has its intensity without it.
       requestJson(fetchImpl, `${API_URL}/generation`, {}, 'Carbon Intensity API').catch(() => null),
     ]);
     if (!Array.isArray(forecast?.data)) {
-      throw new HttpError('Carbon Intensity API answered without data');
+      throw new HttpError(`${WHAT} answered without data`);
     }
     const mix = generation?.data?.generationmix ? parseMix(generation.data.generationmix) : null;
     return {
@@ -82,11 +100,10 @@ export async function fetchZone(fetchImpl, zone, now) {
       : `postcode/${encodeURIComponent(zone.id)}`;
   let body;
   try {
-    body = await requestJson(
+    body = await getJson(
       fetchImpl,
       `${API_URL}/regional/intensity/${from}/fw48h/${path}`,
-      {},
-      'Carbon Intensity API',
+      retryDelayMs,
     );
   } catch (err) {
     if (err.status === 400) {
@@ -100,7 +117,7 @@ export async function fetchZone(fetchImpl, zone, now) {
   // The routes by region answer an object, some mirrors an array of one.
   const data = Array.isArray(body?.data) ? body.data[0] : body?.data;
   if (!Array.isArray(data?.data)) {
-    throw new HttpError('Carbon Intensity API answered without data');
+    throw new HttpError(`${WHAT} answered without data`);
   }
   return {
     name: typeof data.shortname === 'string' ? data.shortname : null,

@@ -76,16 +76,36 @@ test('a network cut and a server error are HttpError, never UnknownZoneError', a
   });
   api.down = false;
   api.answer = () => json(503, {});
-  await assert.rejects(fetchZone(api.fetch, { kind: 'national' }, START), /HTTP 503/);
+  const noWait = { retryDelayMs: 0 };
+  await assert.rejects(fetchZone(api.fetch, { kind: 'national' }, START, noWait), /HTTP 503/);
   api.answer = () => json(500, {});
-  await assert.rejects(fetchZone(api.fetch, { kind: 'region', id: '13' }, START), /HTTP 500/);
+  await assert.rejects(
+    fetchZone(api.fetch, { kind: 'region', id: '13' }, START, noWait),
+    /HTTP 500/,
+  );
+});
+
+test('a 5xx is tried once more: a passing 500 of the regional routes goes unseen', async () => {
+  const api = createFakeApi();
+  const answer = api.answer;
+  let failures = 1;
+  api.answer = (url) => (failures-- > 0 ? json(500, {}) : answer(url));
+  const reading = await fetchZone(api.fetch, { kind: 'region', id: '13' }, START, {
+    retryDelayMs: 0,
+  });
+  assert.equal(reading.name, 'London');
+  assert.equal(api.calls.length, 2);
+  // A 4xx is not tried again.
+  api.calls.length = 0;
+  await assert.rejects(fetchZone(api.fetch, { kind: 'region', id: '99' }, START));
+  assert.equal(api.calls.length, 1);
 });
 
 test('the national mix is optional: the forecast alone still makes a reading', async () => {
   const api = createFakeApi();
   const answer = api.answer;
   api.answer = (url) => (url.endsWith('/generation') ? json(503, {}) : answer(url));
-  const reading = await fetchZone(api.fetch, { kind: 'national' }, START);
+  const reading = await fetchZone(api.fetch, { kind: 'national' }, START, { retryDelayMs: 0 });
   assert.equal(reading.mix, null);
   assert.equal(reading.slots.length, 96);
 });

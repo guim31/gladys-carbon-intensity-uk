@@ -56,6 +56,7 @@ export const LOW_LEVELS = { 1: 'very_low', 2: 'low' };
  * @param {() => number} [options.now]
  * @param {boolean} [options.timers] run the minute timer
  * @param {string} [options.timeZone] for the clock times (TZ of Gladys by default)
+ * @param {number} [options.retryDelayMs] before the second try after a 5xx
  */
 export function registerHandlers(
   gladys,
@@ -65,6 +66,7 @@ export function registerHandlers(
     now = () => Date.now(),
     timers = true,
     timeZone,
+    retryDelayMs,
   } = {},
 ) {
   let config = normalizeConfig(gladys.config ?? {});
@@ -113,7 +115,7 @@ export function registerHandlers(
   async function refreshZone(zone) {
     attempts.set(zone.key, now());
     try {
-      const reading = await fetchZone(fetchImpl, zone, now());
+      const reading = await fetchZone(fetchImpl, zone, now(), { retryDelayMs });
       if (reading.slots.length === 0) {
         throw new Error('the API answered an empty forecast');
       }
@@ -387,8 +389,10 @@ export function registerHandlers(
     if (zones.length === 0) {
       parts.push(TEXT.noZone);
     }
-    for (const zone of zones) {
-      if (await refreshZone(zone)) {
+    // In parallel: a zone that times out must not make the others wait.
+    const answered = await Promise.all(zones.map((zone) => refreshZone(zone)));
+    zones.forEach((zone, i) => {
+      if (answered[i]) {
         const slot = currentSlot(readings.get(zone.key).slots, now());
         parts.push(MESSAGES.zoneOk(zoneName(zone), slot?.intensity ?? 0, slot?.index));
       } else {
@@ -398,7 +402,7 @@ export function registerHandlers(
             : MESSAGES.zoneDown(zoneName(zone)),
         );
       }
-    }
+    });
     if (config.rejectedPostcodes.length > 0) {
       parts.push(MESSAGES.rejectedPostcodes(config.rejectedPostcodes));
     }

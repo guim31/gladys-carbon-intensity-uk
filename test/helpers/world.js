@@ -132,6 +132,7 @@ export async function createWorld({
     now: clock.now,
     timers,
     timeZone: TIME_ZONE,
+    retryDelayMs: 0,
   });
   if (connect) {
     await gladys.connect();
